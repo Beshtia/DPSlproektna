@@ -1,6 +1,17 @@
 import tifffile as tiff
 import os
 import pandas as pd
+import shapely.wkt
+import numpy as np
+
+
+def im_ids():
+    """
+    :return image_ids na train mnozestvoto:
+    """
+    df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
+    image_ids = df['ImageId'].unique()
+    return image_ids
 
 
 def read_3band(img_id=None, train=True):
@@ -9,29 +20,47 @@ def read_3band(img_id=None, train=True):
     :param img_id: ako sakas da procitas edna slika vnesi img_id na taa slika
     :param train: ako sakas da procitas mnozestvo na sliki togas odredi dali go sakas mnozestvoto za treniranje ili za
     predviduvanje
-    :return vraka python recnik od sliki so nivniot img_id ili dokolku img_id ne e None togas vraka edna slika; Slikite
-    se numpy.array() so dimenzii mxnx3:
+    :return vraka pandas DataFrame so kolono=[ImageId, Image] kade vo Image se smesteni slikite so dimenzii mxnx3:
     """
-    df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
-    image_ids = df['ImageId'].unique()
-    images = {}
+    timg_ids = im_ids()
+    image_ids = []
+    images = []
     if not img_id:
         if train:
-                for file in os.listdir('three_band'):
-                    timg_id = file.strip('.tif')
-                    if timg_id in image_ids:
-                        images[timg_id] = (tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]))
+            for file in os.listdir('three_band'):
+                timg_id = file.strip('.tif')
+                if timg_id in timg_ids:
+                    image_ids.append(timg_id)
+                    images.append(tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]))
         else:
             for file in os.listdir('three_band'):
                 timg_id = file.strip('.tif')
-                if timg_id not in image_ids:
-                    images[timg_id] = (tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]))
+                if timg_id not in timg_ids:
+                    image_ids.append(timg_id)
+                    images.append(tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]))
     else:
         return tiff.imread(os.path.join('three_band', img_id + '.tif')).transpose([1, 2, 0])
 
-    return images
+    df = pd.DataFrame.from_dict({'ImageId': image_ids, 'Image': images})
+    df = df[df.columns[::-1]]
+
+    return df
 
 
 def read_polygons():
+    """
+    :return Dataframe kako train_wkt_v4.csv:
+    """
     df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
+    df['MultipolygonWKT'] = df['MultipolygonWKT'].apply(shapely.wkt.loads)
+    return df
+
+
+def read_grid_sizes():
+    """
+    :return DataFrame kako grid_sizes.csv:
+    """
+    df = pd.read_csv(os.path.join('grid_sizes.csv', 'grid_sizes.csv'),
+                     header=0,
+                     names=['ImageId', 'Xmax', 'Ymin'],)
     return df
