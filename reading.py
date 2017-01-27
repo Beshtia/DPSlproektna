@@ -30,3 +30,8 @@ def read_3band(img_id=None, train=True):
         return tiff.imread(os.path.join('three_band', img_id + '.tif')).transpose([1, 2, 0])
 
     return images
+
+
+def read_polygons():
+    df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
+    return df
