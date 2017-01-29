@@ -7,12 +7,11 @@ import cv2
 IM_SIZE = (3349, 3396)
 
 
-def get_scalers(grids, im_size= IM_SIZE):
+def get_scalers(grids, im_size=IM_SIZE):
     """
-
     :param grids: grids_siizes.csv DataFrame
     :param im_size: golemina na slikata
-    :return DataFrame so dopolnitelni koloni za skalirackite faktori x_ i y_:
+    :return DataFrame kako grids so dopolnitelni koloni za skalirackite faktori x_ i y_:
     """
     h, w = im_size  # they are flipped so that mask_for_polygons works correctly
     w_ = w*(w/(w + 1))
@@ -42,6 +41,7 @@ def imadjust(image, lower_percent=2, higher_percent=98):
             t.clip(a, b, t)
 
             out[:, :, i] = t
+
         return out.astype(np.uint8)
     else:
         out = np.zeros_like(image)
@@ -53,20 +53,27 @@ def imadjust(image, lower_percent=2, higher_percent=98):
         t.clip(a, b, t)
 
         out[:, :] = t
+
         return out.astype(np.uint8)
 
 
-def polygon_masks():
+def polygon_masks(im_size=IM_SIZE):
+    """
+    Kreira np.array() so dimenzii=im_size cii elementi pripagjaat na mnozestvoto vrednosti [0, 10] kade sekoja vrednost
+    oznacuva klasata na koja pripagja pikselot, pr. (vodena povrsina, zelena povrsina, pat itn...)
+    :param im_size: golemina na maskata:
+    :return vrakja pandas.Dataframe() so koloni ImageId i Mask kade Mask e maskata za slikata so id=ImageId:
+    """
     wkt = read_polygons()
     grids = read_grid_sizes()
     grids = grids[grids['ImageId'].isin(wkt['ImageId'])]
     grids = get_scalers(grids).set_index('ImageId')
     masks = {'ImageId': [], 'Mask': []}
 
-    for id in grids.index.tolist():
-        x_, y_ = grids.loc[id].x_, grids.loc[id].y_
-        mask = np.zeros(IM_SIZE, dtype=np.uint8)
-        polys = wkt[wkt.ImageId == id]['MultipolygonWKT'].tolist()
+    for img_id in grids.index.tolist():
+        x_, y_ = grids.loc[img_id].x_, grids.loc[img_id].y_
+        mask = np.zeros(im_size, dtype=np.uint8)
+        polys = wkt[wkt.ImageId == img_id]['MultipolygonWKT'].tolist()
         for mpoly, i in zip(polys, range(len(polys))):
                 pom = [shapely.affinity.scale(poly, xfact=x_, yfact=y_, origin=(0, 0, 0)) for poly in mpoly]
                 exteriors = [np.array(poly.exterior.coords).round().astype(np.int32) for poly in pom]
@@ -75,4 +82,5 @@ def polygon_masks():
                 cv2.fillPoly(mask, interiors, 0)
         masks['ImageId'].append(id)
         masks['Mask'].append(mask)
+
     return pd.DataFrame.from_dict(masks)
