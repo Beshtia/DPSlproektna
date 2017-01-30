@@ -5,7 +5,7 @@ import shapely.wkt
 import numpy as np
 
 
-def im_ids():
+def get_timg_ids():
     """
     :return image_ids na train mnozestvoto:
     """
@@ -22,7 +22,7 @@ def read_3band(img_id=None, train=True):
     predviduvanje
     :return vraka pandas DataFrame so kolono=[ImageId, Image] kade vo Image se smesteni slikite so dimenzii mxnx3:
     """
-    timg_ids = im_ids()
+    timg_ids = get_timg_ids()
     image_ids = []
     images = []
     if not img_id:
@@ -47,12 +47,14 @@ def read_3band(img_id=None, train=True):
     return df
 
 
-def read_polygons():
+def read_polygons(im_id=None):
     """
     :return Dataframe kako train_wkt_v4.csv:
     """
     df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
     df['MultipolygonWKT'] = df['MultipolygonWKT'].apply(shapely.wkt.loads)
+    if im_id is not None:
+        return df[df['ImageId'].str.strip() == im_id]['MultipolygonWKT'].tolist()
     return df
 
 

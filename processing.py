@@ -57,30 +57,46 @@ def imadjust(image, lower_percent=2, higher_percent=98):
         return out.astype(np.uint8)
 
 
-def polygon_masks(im_size=IM_SIZE):
+def polygon_masks(im_id=None, im_size=IM_SIZE):
     """
     Kreira np.array() so dimenzii=im_size cii elementi pripagjaat na mnozestvoto vrednosti [0, 10] kade sekoja vrednost
     oznacuva klasata na koja pripagja pikselot, pr. (vodena povrsina, zelena povrsina, pat itn...)
     :param im_size: golemina na maskata:
+    :param im_id: za selekcija na edna slika samo
     :return vrakja pandas.Dataframe() so koloni ImageId i Mask kade Mask e maskata za slikata so id=ImageId:
     """
-    wkt = read_polygons()
-    grids = read_grid_sizes()
-    grids = grids[grids['ImageId'].isin(wkt['ImageId'])]
-    grids = get_scalers(grids).set_index('ImageId')
-    masks = {'ImageId': [], 'Mask': []}
+    if im_id is None:
+        wkt = read_polygons()
+        grids = read_grid_sizes()
+        grids = grids[grids['ImageId'].isin(wkt['ImageId'])]
+        grids = get_scalers(grids).set_index('ImageId')
+        masks = {'ImageId': [], 'Mask': []}
 
-    for img_id in grids.index.tolist():
-        x_, y_ = grids.loc[img_id].x_, grids.loc[img_id].y_
+        for img_id in grids.index.tolist():
+            x_, y_ = grids.loc[img_id].x_, grids.loc[img_id].y_
+            mask = np.zeros(im_size, dtype=np.uint8)
+            polys = wkt[wkt.ImageId == img_id]['MultipolygonWKT'].tolist()
+            for i, mpoly in enumerate(polys):
+                    pom = [shapely.affinity.scale(poly, xfact=x_, yfact=y_, origin=(0, 0, 0)) for poly in mpoly]
+                    exteriors = [np.array(poly.exterior.coords).round().astype(np.int32) for poly in pom]
+                    interiors = [np.array(pi.coords).round().astype(np.int32) for poly in pom for pi in poly.interiors]
+                    cv2.fillPoly(mask, pts=exteriors, color=i+1)
+                    cv2.fillPoly(mask, pts=interiors, color=0)
+            masks['ImageId'].append(img_id)
+            masks['Mask'].append(mask)
+    else:
+        grids = read_grid_sizes()
+        grids = grids[grids['ImageId'].str.strip() == im_id]
+        grids = get_scalers(grids).set_index('ImageId')
+        x_, y_ = grids.loc[im_id].x_, grids.loc[im_id].y_
         mask = np.zeros(im_size, dtype=np.uint8)
-        polys = wkt[wkt.ImageId == img_id]['MultipolygonWKT'].tolist()
-        for mpoly, i in zip(polys, range(len(polys))):
-                pom = [shapely.affinity.scale(poly, xfact=x_, yfact=y_, origin=(0, 0, 0)) for poly in mpoly]
-                exteriors = [np.array(poly.exterior.coords).round().astype(np.int32) for poly in pom]
-                interiors = [np.array(pi.coords).round().astype(np.int32) for poly in pom for pi in poly.interiors]
-                cv2.fillPoly(mask, exteriors, i+1)
-                cv2.fillPoly(mask, interiors, 0)
-        masks['ImageId'].append(id)
-        masks['Mask'].append(mask)
+        polys = read_polygons(im_id)
+        for i, mpoly in enumerate(polys):
+            pom = [shapely.affinity.scale(poly, xfact=x_, yfact=y_, origin=(0, 0, 0)) for poly in mpoly]
+            exteriors = [np.array(poly.exterior.coords).round().astype(np.int32) for poly in pom]
+            interiors = [np.array(pi.coords).round().astype(np.int32) for poly in pom for pi in poly.interiors]
+            cv2.fillPoly(mask, pts=exteriors, color=i + 1)
+            cv2.fillPoly(mask, pts=interiors, color=0)
+        return mask
 
     return pd.DataFrame.from_dict(masks)
