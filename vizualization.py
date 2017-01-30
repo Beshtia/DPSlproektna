@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from processing import *
 from reading import *
 from matplotlib.patches import Patch
+import re
+from skimage.io import imread, imsave
+from skimage.transform import resize
 
 
 CLASSES = {0: 'not a class',
@@ -44,6 +47,12 @@ C_MAP = LSC.from_list('ime', CL, 11)
 
 
 def show_img(im_id, title=True):
+    """
+    Display image in figure;must use plt.show() after use of function
+    :param im_id: id of image you want to display
+    :param title: whether you want to display title(depends if you wanna use the function for saving the image)
+    :return:
+    """
     image = read_3band(im_id)
     image = imadjust(image)
     plt.figure(1)
@@ -54,20 +63,35 @@ def show_img(im_id, title=True):
     return
 
 
-def show_overlapping_mask(im_id, title=True):
-    mask = polygon_masks(im_id)
+def show_overlapping_mask(im_id, title=True, legend=True):
+    """
+    Display the overlapping mask
+    :param im_id: id of image
+    :param title: whether you want to display title(depends if you wanna use the function for saving the image)
+    :param legend: whether you want to display legend(depends if you wanna use the function for saving the image)
+    :return:
+    """
+    mask = polygon_masks_1mask(im_id)
     plt.figure(2)
     plt.imshow(mask, cmap=C_MAP)
     plt.axis('off')
     if title:
         plt.title(im_id)
-    cb = plt.colorbar()
-    cb.set_ticks(np.arange(0, 11, 1) + 0.5)
-    cb.set_ticklabels(list(CLASSES.values()))
+    if legend:
+        cb = plt.colorbar()
+        cb.set_ticks(np.arange(0, 11, 1) + 0.5)
+        cb.set_ticklabels(list(CLASSES.values()))
     return
 
 
 def show_nonoverlapping_mask(im_id, title=True, leg=True):
+    """
+    DIsplay nonoverlapping mask
+    :param im_id: id of image
+    :param title: whether you want to display title(depends if you wanna use the function for saving the image)
+    :param leg: whether you want to display legend(depends if you wanna use the function for saving the image)
+    :return:
+    """
     polys = read_polygons(im_id)
     fig, ax = plt.subplots(1, 1)
     legend = []
@@ -94,7 +118,7 @@ def show_nonoverlapping_mask(im_id, title=True, leg=True):
     return
 
 
-def save_imgs(f_name='sliki'):
+def save_imgs(fold_name='sliki'):
     img_ids = get_timg_ids()
     newpath = os.path.join('sliki', '3band')
     if not os.path.exists(newpath):
@@ -107,7 +131,7 @@ def save_imgs(f_name='sliki'):
         plt.margins(0, 0)
         plt.gca().xaxis.set_major_locator(plt.NullLocator())
         plt.gca().yaxis.set_major_locator(plt.NullLocator())
-        plt.savefig(os.path.join('f_name', '3band', img_id + '.png'), bbox_inches='tight', pad_inches=0, dpi='figure')
+        plt.savefig(os.path.join(fold_name, '3band', img_id + '.png'), bbox_inches='tight', pad_inches=0, dpi=1000)
         plt.clf()
         plt.close()
 
@@ -117,6 +141,17 @@ def save_imgs(f_name='sliki'):
         plt.margins(0, 0)
         plt.gca().xaxis.set_major_locator(plt.NullLocator())
         plt.gca().yaxis.set_major_locator(plt.NullLocator())
-        plt.savefig(os.path.join('f_name', '3band', img_id + '_mask' + '.png'), bbox_inches='tight', pad_inches=0, dpi='figure')
+        plt.savefig(os.path.join(fold_name, '3band', img_id + '_mask' + '.png'), bbox_inches='tight', pad_inches=0,
+                    dpi=1000)
         plt.clf()
         plt.close()
+
+        for f_name in os.listdir(os.path.join('sliki', '3band')):
+            if f_name == 'legend.png':
+                continue
+            if not re.search('mask', f_name):
+                image = imread('sliki\\3band\\' + f_name)
+                mask_path = 'sliki\\3band\\' + f_name.strip('.png') + '_mask.png'
+                mask = imread(mask_path)
+                mask = resize(mask, image.shape)
+                imsave(mask_path, mask)
