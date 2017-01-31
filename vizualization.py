@@ -63,9 +63,9 @@ def show_img(im_id, title=True):
     return
 
 
-def show_overlapping_mask(im_id, title=True, legend=True):
+def show_nonoverlapping_mask(im_id, title=True, legend=True):
     """
-    Display the overlapping mask
+    Display the nonoverlapping mask
     :param im_id: id of image
     :param title: whether you want to display title(depends if you wanna use the function for saving the image)
     :param legend: whether you want to display legend(depends if you wanna use the function for saving the image)
@@ -73,7 +73,7 @@ def show_overlapping_mask(im_id, title=True, legend=True):
     """
     mask = polygon_masks_1mask(im_id)
     plt.figure(2)
-    plt.imshow(mask, cmap=C_MAP)
+    plt.imshow(mask, cmap=C_MAP, vmin=0, vmax=10)
     plt.axis('off')
     if title:
         plt.title(im_id)
@@ -84,9 +84,9 @@ def show_overlapping_mask(im_id, title=True, legend=True):
     return
 
 
-def show_nonoverlapping_mask(im_id, title=True, leg=True):
+def show_overlapping_mask(im_id, title=True, leg=True):
     """
-    DIsplay nonoverlapping mask
+    DIsplay overlapping mask
     :param im_id: id of image
     :param title: whether you want to display title(depends if you wanna use the function for saving the image)
     :param leg: whether you want to display legend(depends if you wanna use the function for saving the image)
