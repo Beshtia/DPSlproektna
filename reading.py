@@ -53,6 +53,7 @@ def read_polygons(im_id=None):
     """
     df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
     df['MultipolygonWKT'] = df['MultipolygonWKT'].apply(shapely.wkt.loads)
+    df.set_value(201, 'MultipolygonWKT', df.iloc[201, 2].buffer(0))  # se poprava invalid poligon
     if im_id is not None:
         return df[df['ImageId'].str.strip() == im_id]['MultipolygonWKT'].tolist()
     return df
