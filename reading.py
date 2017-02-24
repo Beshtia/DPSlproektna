@@ -14,6 +14,7 @@ def get_timg_ids():
     image_ids = df['ImageId'].unique()
     return image_ids
 
+
 def get_pimg_ids():
     """
     :return image_ids na predict mnozestvoto:
@@ -22,9 +23,9 @@ def get_pimg_ids():
     timage_ids = df['ImageId'].unique()
     pimage_ids = []
     for file in os.listdir('three_band'):
-        id = file.strip('.tif')
-        if id not in timage_ids:
-            pimage_ids.append(id)
+        i_id = file.strip('.tif')
+        if i_id not in timage_ids:
+            pimage_ids.append(i_id)
     return pimage_ids
 
 
@@ -45,41 +46,19 @@ def read_3band(img_id=None, train=True):
                 timg_id = file.strip('.tif')
                 if timg_id in timg_ids:
                     image_ids.append(timg_id)
-                    images.append(tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]))
+                    images.append(tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]).astype(np.uint16))
         else:
             for file in os.listdir('three_band'):
                 timg_id = file.strip('.tif')
                 if timg_id not in timg_ids:
                     image_ids.append(timg_id)
-                    images.append(tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]))
+                    images.append(tiff.imread(os.path.join('three_band', file)).transpose([1, 2, 0]).astype(np.uint16))
     else:
-        return tiff.imread(os.path.join('three_band', img_id + '.tif')).transpose([1, 2, 0])
+        return tiff.imread(os.path.join('three_band', img_id + '.tif')).transpose([1, 2, 0]).astype(np.uint16)
 
     df = pd.DataFrame.from_dict({'ImageId': image_ids, 'Image': images})
     df = df[df.columns[::-1]]
 
-    return df
-
-
-def read_polygons(im_id=None):
-    """
-    :return Dataframe kako train_wkt_v4.csv:
-    """
-    df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
-    df['MultipolygonWKT'] = df['MultipolygonWKT'].apply(shapely.wkt.loads)
-    df.set_value(201, 'MultipolygonWKT', df.iloc[201, 2].buffer(0))  # se poprava invalid poligon
-    if im_id is not None:
-        return df[df['ImageId'].str.strip() == im_id]['MultipolygonWKT'].tolist()
-    return df
-
-
-def read_grid_sizes():
-    """
-    :return DataFrame kako grid_sizes.csv:
-    """
-    df = pd.read_csv(os.path.join('grid_sizes.csv', 'grid_sizes.csv'),
-                     header=0,
-                     names=['ImageId', 'Xmax', 'Ymin'],)
     return df
 
 
@@ -130,4 +109,26 @@ def read_16band(img_id=None, train=True):
     columns = df.columns
     df = df[np.roll(columns, -1)]
 
+    return df
+
+
+def read_polygons(im_id=None):
+    """
+    :return Dataframe kako train_wkt_v4.csv:
+    """
+    df = pd.read_csv(os.path.join('train_wkt_v4.csv', 'train_wkt_v4.csv'))
+    df['MultipolygonWKT'] = df['MultipolygonWKT'].apply(shapely.wkt.loads)
+    df.set_value(201, 'MultipolygonWKT', df.iloc[201, 2].buffer(0))  # se poprava invalid poligon
+    if im_id is not None:
+        return df[df['ImageId'].str.strip() == im_id]['MultipolygonWKT'].tolist()
+    return df
+
+
+def read_grid_sizes():
+    """
+    :return DataFrame kako grid_sizes.csv:
+    """
+    df = pd.read_csv(os.path.join('grid_sizes.csv', 'grid_sizes.csv'),
+                     header=0,
+                     names=['ImageId', 'Xmax', 'Ymin'],)
     return df
