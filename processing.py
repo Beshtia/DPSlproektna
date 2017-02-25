@@ -70,7 +70,7 @@ def polygon_masks_1mask(im_id=None, im_size=IM_SIZE):
         wkt = read_polygons()
         grids = read_grid_sizes()
         grids = grids[grids['ImageId'].isin(wkt['ImageId'])]
-        grids = get_scalers(grids).set_index('ImageId')
+        grids = get_scalers(grids, im_size).set_index('ImageId')
         masks = {'ImageId': [], 'Mask': []}
 
         for img_id in grids.index.tolist():
@@ -88,7 +88,7 @@ def polygon_masks_1mask(im_id=None, im_size=IM_SIZE):
     else:
         grids = read_grid_sizes()
         grids = grids[grids['ImageId'].str.strip() == im_id]
-        grids = get_scalers(grids).set_index('ImageId')
+        grids = get_scalers(grids, im_size).set_index('ImageId')
         x_, y_ = grids.loc[im_id].x_, grids.loc[im_id].y_
         mask = np.zeros(im_size, dtype=np.uint8)
         polys = read_polygons(im_id)
@@ -116,7 +116,7 @@ def polygon_masks_10mask(im_id=None, im_size=IM_SIZE):
         wkt = read_polygons()
         grids = read_grid_sizes()
         grids = grids[grids['ImageId'].isin(wkt['ImageId'])]
-        grids = get_scalers(grids).set_index('ImageId')
+        grids = get_scalers(grids, im_size).set_index('ImageId')
         masks = {'ImageId': []}
         for i in range(10):
             masks.update({'Mask_' + str(i+1): []})
@@ -136,7 +136,7 @@ def polygon_masks_10mask(im_id=None, im_size=IM_SIZE):
     else:
         grids = read_grid_sizes()
         grids = grids[grids['ImageId'].str.strip() == im_id]
-        grids = get_scalers(grids).set_index('ImageId')
+        grids = get_scalers(grids, im_size).set_index('ImageId')
         x_, y_ = grids.loc[im_id].x_, grids.loc[im_id].y_
         masks = {}
         for i in range(10):
