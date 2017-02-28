@@ -101,9 +101,10 @@ def read_16band(img_id=None, train=True):
         image_M = tiff.imread(os.path.join('sixteen_band', img_id + '_M.tif')).transpose([1, 2, 0]).astype(np.uint16)
         image_P = tiff.imread(os.path.join('sixteen_band', img_id + '_P.tif')).astype(np.uint16)
         df['ImageId'] = img_id
-        df['A'].append(image_A)
-        df['M'].append(image_M)
-        df['P'].append(image_P)
+        df['A'] = image_A
+        df['M'] = image_M
+        df['P'] = image_P
+        return df
 
     df = pd.DataFrame.from_dict(df)
     columns = df.columns

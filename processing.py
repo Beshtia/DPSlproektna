@@ -139,8 +139,6 @@ def polygon_masks_10mask(im_id=None, im_size=IM_SIZE):
         grids = get_scalers(grids, im_size).set_index('ImageId')
         x_, y_ = grids.loc[im_id].x_, grids.loc[im_id].y_
         masks = {}
-        for i in range(10):
-            masks.update({'Mask_' + str(i+1): []})
         polys = read_polygons(im_id)
         for i, mpoly in enumerate(polys):
             mask = np.zeros(im_size, dtype=np.uint8)
@@ -149,7 +147,7 @@ def polygon_masks_10mask(im_id=None, im_size=IM_SIZE):
             interiors = [np.array(pi.coords).round().astype(np.int32) for poly in pom for pi in poly.interiors]
             cv2.fillPoly(mask, pts=exteriors, color=1)
             cv2.fillPoly(mask, pts=interiors, color=0)
-            masks['Mask_' + str(i + 1)].append(mask)
+            masks['Mask_' + str(i + 1)] = mask
         return masks
 
     return pd.DataFrame.from_dict(masks)
