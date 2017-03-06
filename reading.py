@@ -68,7 +68,7 @@ def read_16band(img_id=None, train=True):
     :param img_id: ako sakas da procitas edna slika vnesi img_id na taa slika
     :param train: ako sakas da procitas mnozestvo na sliki togas odredi dali go sakas mnozestvoto za treniranje ili za
     predviduvanje
-    :return vraka pandas DataFrame so kolono=[ImageId, Image] kade vo Image se smesteni slikite so dimenzii mxnx3:
+    :return vraka pandas DataFrame so kolono=[ImageId, A, M, P] kade vo sekoja kolona A, M i P se smesteni sliki:
     """
     timg_ids = get_timg_ids()
     df = {'ImageId': [], 'A': [], 'M': [], 'P': []}

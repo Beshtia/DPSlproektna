@@ -151,3 +151,31 @@ def polygon_masks_10mask(im_id=None, im_size=IM_SIZE):
         return masks
 
     return pd.DataFrame.from_dict(masks)
+
+
+def get_net_train_data():
+    ids = get_timg_ids()
+    three_band_list = []
+    masks_list = []
+    a_list = []
+    m_list = []
+    for img_id in ids:
+        three_band = cv2.resize(read_3band(img_id), (3584, 3584))
+        sixteen_band = read_16band(img_id)
+        a = cv2.resize(sixteen_band['A'], (224, 224))
+        m = cv2.resize(sixteen_band['M'], (896, 896))
+        masks = polygon_masks_10mask(img_id, (3584, 3584))  # ovde se menja goleminata na maskata
+        pom = []
+        for i in range(1, 11):
+            pom.append(masks['Mask_' + str(i)])
+        masks = np.moveaxis(np.array(pom), 0, -1)
+
+        for i in range(7):
+            for j in range(7):
+                three_band_list.append(three_band[512*i: 512*i + 512, 512*j: 512*j + 512, :])
+                masks_list.append(masks[512*i: 512*i + 512, 512*j: 512*j + 512, :])
+                m_list.append(m[128 * i: 128 * i + 128, 128 * j: 128 * j + 128, :])
+                a_list.append(a[32 * i: 32 * i + 32, 32 * j: 32 * j + 32, :])
+
+    return np.array(three_band_list), np.array(m_list), np.array(a_list), np.array(masks_list)
+
