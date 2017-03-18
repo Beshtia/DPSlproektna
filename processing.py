@@ -3,6 +3,9 @@ import numpy as np
 import shapely.affinity
 import cv2
 import matplotlib.pyplot as plt
+import random
+import tifffile as tf
+from skimage.transform import rotate
 
 
 IM_SIZE = (3349, 3396)
@@ -153,6 +156,7 @@ def polygon_masks_10mask(im_id=None, im_size=IM_SIZE):
     return pd.DataFrame.from_dict(masks)
 
 
+#Deprecated
 def get_net_train_data():
     ids = get_timg_ids()
     three_band_list = []
@@ -178,4 +182,61 @@ def get_net_train_data():
                 a_list.append(a[32 * i: 32 * i + 32, 32 * j: 32 * j + 32, :])
 
     return np.array(three_band_list), np.array(m_list), np.array(a_list), np.array(masks_list)
+
+
+def save_train_data(data_size=45e3):
+    """
+    Generates augmented images from the original train_set and saves the in folder  train_data
+    Img format of saving 'ImageID_Channel_i_j_rotation(0, 90, 180, 270)_flip(0, lr, ud)'
+    :param data_size: Determines size of the augmented-fragmented train set.
+    :return:
+    """
+    ids = get_timg_ids()
+    if not os.path.exists('train_data'):
+        os.makedirs('train_data')
+
+    for img_id in ids:
+        #Read channels
+        three_band = cv2.resize(read_3band(img_id), (3584, 3584))
+        sixteen_band = read_16band(img_id)
+        a = cv2.resize(sixteen_band['A'], (224, 224))
+        m = cv2.resize(sixteen_band['M'], (896, 896))
+        masks = polygon_masks_10mask(img_id, (3584, 3584))  # ovde se menja goleminata na maskata
+        pom = []
+        for i in range(1, 11):
+            pom.append(masks['Mask_' + str(i)])
+        masks = np.moveaxis(np.array(pom), 0, -1)
+
+        #Find max coordinates for image extraction
+        three_band_max = three_band.shape[0] - 512
+        for _ in range(int(data_size/300)):
+            three_band_i, three_band_j = random.randint(0, three_band_max), random.randint(0, three_band_max)
+            m_i, m_j = int(three_band_i/4), int(three_band_j/4)
+            a_i, a_j = int(three_band_i/16), int(three_band_j/16)
+
+            for img, channel, i, j, size in [(three_band, '_3band_', three_band_i, three_band_j, 512),
+                                             (m, '_m_', m_i, m_j, 128),
+                                             (a, '_a_', a_i, a_j, 32),
+                                             (masks, '_mask_', three_band_i, three_band_j, 512)]:
+                i_max = i + size
+                j_max = j + size
+                for angle in [0, 90, 180, 270]:
+                    rotated = rotate(img[i:i_max, j:j_max, :], angle)
+                    tiff.imsave(os.path.join('train_data',
+                                             str(img_id) +
+                                             channel +
+                                             str(three_band_i) + '_' +
+                                             str(three_band_j) + '_' +
+                                             str(angle) + '_0.tiff'),
+                                rotated)
+                    for flip, direction in [(np.fliplr, 'lr'), (np.flipud, 'ud')]:
+                        tiff.imsave(os.path.join('train_data',
+                                                 str(img_id) +
+                                                 channel +
+                                                 str(three_band_i) + '_' +
+                                                 str(three_band_j) + '_' +
+                                                 str(angle) + '_'
+                                                 + direction + '.tiff'),
+                                    flip(rotated))
+
 
